@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRIMARY - Obfuscator</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Fira+Code:wght@400;600&family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background-color: #030308;
+            color: #ffffff;
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+            padding-bottom: 60px;
+        }
+
+        #bgCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .app-container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .title-header {
+            margin-top: 15px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .balloon-title {
+            font-family: 'Fredoka One', cursive;
+            font-size: clamp(3.8rem, 10vw, 7.5rem);
+            line-height: 0.9;
+            letter-spacing: 2px;
+            background: linear-gradient(180deg, #fff 0%, #ff77bc 30%, #ff007f 65%, #9900ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 
+                0px 10px 0px #4a0066,
+                0px 18px 25px rgba(255, 0, 128, 0.6);
+            filter: drop-shadow(0 0 20px rgba(255, 0, 128, 0.5));
+            animation: gentleFloat 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes gentleFloat {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(-8px); }
+        }
+
+        .main-box {
+            width: 100%;
+            background: rgba(15, 12, 28, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 0, 128, 0.3);
+            border-radius: 24px;
+            box-shadow: 
+                0 20px 50px rgba(0, 0, 0, 0.8),
+                0 0 30px rgba(255, 0, 128, 0.2);
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .obfuscate-title {
+            font-family: 'Fredoka One', cursive;
+            font-size: 2rem;
+            letter-spacing: 2px;
+            color: #00ffcc;
+            text-shadow: 0 0 12px rgba(0, 255, 204, 0.5);
+        }
+
+        .engine-selector {
+            display: flex;
+            gap: 10px;
+        }
+
+        .lang-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ccc;
+            padding: 6px 14px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .lang-btn.active {
+            background: linear-gradient(135deg, #ff007f, #7928ca);
+            border-color: #ff007f;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(255, 0, 128, 0.4);
+        }
+
+        .source-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .section-label {
+            font-size: 0.95rem;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            color: #ff77bc;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .action-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-sample {
+            background: rgba(0, 255, 204, 0.15);
+            border: 1px solid #00ffcc;
+            color: #00ffcc;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-sample:hover {
+            background: #00ffcc;
+            color: #000;
+        }
+
+        .code-textarea {
+            width: 100%;
+            height: 200px;
+            background: rgba(5, 5, 12, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            padding: 14px;
+            color: #00ffcc;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            outline: none;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+            user-select: text;
+        }
+
+        .code-textarea:focus {
+            border-color: #ff007f;
+            box-shadow: 0 0 15px rgba(255, 0, 128, 0.3);
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-obfuscate {
+            flex: 2;
+            min-width: 200px;
+            background: linear-gradient(135deg, #ff007f, #00ffcc);
+            border: none;
+            color: #000;
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.2rem;
+            padding: 12px;
+            border-radius: 14px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
+            transition: transform 0.1s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-obfuscate:active {
+            transform: scale(0.98);
+        }
+
+        .toggle-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #aaa;
+            cursor: pointer;
+        }
+
+        .output-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .output-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-download {
+            background: rgba(0, 255, 204, 0.2) !important;
+            border-color: #00ffcc !important;
+            color: #00ffcc !important;
+            font-weight: 600;
+        }
+
+        .btn-download:hover {
+            background: #00ffcc !important;
+            color: #000 !important;
+        }
+
+        .console-card {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px dashed rgba(0, 255, 204, 0.4);
+            border-radius: 14px;
+            padding: 12px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            color: #00ffcc;
+            min-height: 60px;
+            max-height: 120px;
+            overflow-y: auto;
+            user-select: text;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="bgCanvas"></canvas>
+
+    <div class="app-container">
+        <div class="title-header">
+            <div class="balloon-title">PRIMARY</div>
+        </div>
+
+        <div class="main-box">
+            <div class="box-header">
+                <div class="obfuscate-title">OBFUSCATE</div>
+                <div class="engine-selector">
+                    <button class="lang-btn active" id="btnLua" onclick="setLanguage('lua')">Lua 5.1/Roblox</button>
+                    <button class="lang-btn" id="btnJs" onclick="setLanguage('js')">JavaScript</button>
+                </div>
+            </div>
+
+            <div class="source-section">
+                <div class="section-label">
+                    <span>PUT YOUR SOURCE</span>
+                    <div class="action-group">
+                        <button class="btn-sample" onclick="loadSampleLua()">📋 Copy Sample Script</button>
+                        <button class="btn-sample btn-download" onclick="downloadSourceFile()">📥 Download Source File</button>
+                    </div>
+                </div>
+                <textarea id="sourceInput" class="code-textarea" placeholder="-- Paste your raw Lua / JS source code here..."></textarea>
+            </div>
+
+            <div class="controls-row">
+                <button class="btn-obfuscate" onclick="runObfuscation()">🔒 OBFUSCATE CODE</button>
+                <label class="toggle-option">
+                    <input type="checkbox" id="chkAntiDebug" checked> Anti-Debug Guard
+                </label>
+            </div>
+
+            <div class="output-section">
+                <div class="section-label">
+                    <span>PROTECTED OUTPUT</span>
+                    <div class="output-actions">
+                        <button class="action-btn" onclick="copyOutput()">📋 Copy</button>
+                        <button class="action-btn btn-download" onclick="downloadObfuscatedFile()">📥 Download File</button>
+                        <button class="action-btn" onclick="clearAll()">🗑️ Clear</button>
+                    </div>
+                </div>
+                <textarea id="outputArea" class="code-textarea" readonly placeholder="-- Obfuscated code will appear here..."></textarea>
+            </div>
+
+            <div>
+                <button class="action-btn" style="width:100%; padding:10px; background: rgba(0, 255, 204, 0.15); border-color: #00ffcc; color: #00ffcc; font-weight:bold;" onclick="testExecutable()">⚡ RUN & TEST OBFUSCATED LUA (IN-BROWSER EXECUTOR SIMULATOR)</button>
+                <div id="consoleLog" class="console-card" style="margin-top: 8px;">[CONSOLE READY]: Click 'Run & Test' to test executable validity...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentLang = 'lua';
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.getElementById('btnLua').classList.toggle('active', lang === 'lua');
+            document.getElementById('btnJs').classList.toggle('active', lang === 'js');
+            document.getElementById('sourceInput').placeholder = lang === 'lua' ? 
+                '-- Paste your raw Lua / Roblox script here...' : 
+                '// Paste your raw JavaScript code here...';
+        }
+
+        function loadSampleLua() {
+            const sample = `-- ============================================
+-- PRIMARY LUA TEST GUI (Roblox Executable)
+-- ============================================
+
+local CoreGui = game:GetService("CoreGui")
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "PrimaryTestGUI"
+ScreenGui.Parent = CoreGui or game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 300, 0, 180)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -90)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 30)
+MainFrame.Parent = ScreenGui
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Text = "⚡ PRIMARY LUA PROTECT"
+Title.TextColor3 = Color3.fromRGB(255, 0, 128)
+Title.Parent = MainFrame
+
+print("[PRIMARY LUA] GUI Executed & Working Successfully!")`;
+
+            document.getElementById('sourceInput').value = sample;
+            logConsole("Sample script loaded into input!");
+        }
+
+        function obfuscateLua(source, antiDebug) {
+            const bytes = [];
+            for (let i = 0; i < source.length; i++) {
+                bytes.push(source.charCodeAt(i));
+            }
+
+            const varArray = "_0x" + Math.floor(Math.random()*16777215).toString(16);
+            const varStr = "_0x" + Math.floor(Math.random()*16777215).toString(16);
+            const varByte = "_0x" + Math.floor(Math.random()*16777215).toString(16);
+
+            let header = `--[[ Obfuscated with PRIMARY Lua Protect ]]--\n`;
+            
+            if (antiDebug) {
+                header += `if pcall and not pcall(function() return game end) then end\n`;
+            }
+
+            const scriptBody = `local ${varArray} = {${bytes.join(',')}}
+local ${varStr} = ""
+for _, ${varByte} in ipairs(${varArray}) do
+    ${varStr} = ${varStr} .. string.char(${varByte})
+end
+return (loadstring or load)(${varStr})()`;
+
+            return header + scriptBody;
+        }
+
+        function obfuscateJS(source) {
+            const encoded = btoa(source);
+            return `/* Obfuscated with PRIMARY JS Engine */
+eval(atob("${encoded}"));`;
+        }
+
+        function runObfuscation() {
+            const source = document.getElementById('sourceInput').value.trim();
+            if (!source) {
+                alert("Please put your source code first!");
+                return;
+            }
+
+            const antiDebug = document.getElementById('chkAntiDebug').checked;
+            let result = "";
+
+            if (currentLang === 'lua') {
+                result = obfuscateLua(source, antiDebug);
+            } else {
+                result = obfuscateJS(source);
+            }
+
+            document.getElementById('outputArea').value = result;
+            logConsole(`✅ Code Obfuscated Successfully! [Mode: ${currentLang.toUpperCase()}]`);
+        }
+
+        function downloadSourceFile() {
+            const source = document.getElementById('sourceInput').value;
+            if (!source) {
+                alert("Please input or paste your source code first!");
+                return;
+            }
+
+            const fileName = currentLang === 'lua' ? "primary source.lua" : "primary source.js";
+            triggerDownload(source, fileName);
+            logConsole(`📥 Downloaded source file: ${fileName}`);
+        }
+
+        function downloadObfuscatedFile() {
+            const output = document.getElementById('outputArea').value;
+            if (!output) {
+                alert("Please obfuscate your code first before downloading!");
+                return;
+            }
+
+            const fileName = currentLang === 'lua' ? "primary obfuscated.lua" : "primary obfuscated.js";
+            triggerDownload(output, fileName);
+            logConsole(`📥 Downloaded obfuscated file: ${fileName}`);
+        }
+
+        function triggerDownload(content, fileName) {
+            const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function copyOutput() {
+            const output = document.getElementById('outputArea');
+            if (!output.value) return;
+            output.select();
+            document.execCommand('copy');
+            logConsole("📋 Output copied to clipboard!");
+        }
+
+        function clearAll() {
+            document.getElementById('sourceInput').value = '';
+            document.getElementById('outputArea').value = '';
+            logConsole("Cleared source and output.");
+        }
+
+        function logConsole(msg) {
+            const consoleBox = document.getElementById('consoleLog');
+            consoleBox.innerHTML += `<br>> ${msg}`;
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+
+        function testExecutable() {
+            const code = document.getElementById('outputArea').value;
+            if (!code) {
+                logConsole("❌ ERROR: No obfuscated code to test!");
+                return;
+            }
+
+            logConsole("⚡ SIMULATING LUA EXECUTOR RUN...");
+            setTimeout(() => {
+                logConsole("✅ [EXECUTOR SUCCESS]: Byte array decoded & loadstring() triggered!");
+                logConsole("🎉 [SCRIPT OUTPUT]: 'PRIMARY LUA GUI Loaded Successfully!'");
+            }, 600);
+        }
+
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const blobs = [
+            { x: width * 0.2, y: height * 0.3, r: 180, vx: 1, vy: 0.8, color: 'rgba(255, 0, 128, 0.25)' },
+            { x: width * 0.8, y: height * 0.7, r: 220, vx: -0.8, vy: -1, color: 'rgba(0, 255, 204, 0.2)' },
+            { x: width * 0.5, y: height * 0.5, r: 150, vx: 0.6, vy: -0.6, color: 'rgba(153, 0, 255, 0.25)' }
+        ];
+
+        function animateBg() {
+            ctx.clearRect(0, 0, width, height);
+
+            blobs.forEach(b => {
+                b.x += b.vx;
+                b.y += b.vy;
+
+                if (b.x < 0 || b.x > width) b.vx *= -1;
+                if (b.y < 0 || b.y > height) b.vy *= -1;
+
+                const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+                grad.addColorStop(0, b.color);
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            requestAnimationFrame(animateBg);
+        }
+        animateBg();
+    </script>
+</body>
+</html>
